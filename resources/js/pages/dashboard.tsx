@@ -449,12 +449,12 @@ const Dashboard: React.FC<PageProps> = ({ reservations_count, recent_reservation
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="flex-1 space-y-4 p-8 pt-6">
+            <div className="flex-1 space-y-4 p-8 pt-6 md:px-4">
                 <div className="flex items-center justify-between space-y-2">
                 </div>
                 
                 {/* Top Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
@@ -514,7 +514,7 @@ const Dashboard: React.FC<PageProps> = ({ reservations_count, recent_reservation
                 </div>
                 
                 {/* Charts */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-7">
                     <Card className="col-span-4">
                         <CardHeader>
                             <CardTitle>Bookings by Day of Week</CardTitle>
@@ -723,7 +723,7 @@ const Dashboard: React.FC<PageProps> = ({ reservations_count, recent_reservation
                                     }}
                                     height={50}
                                     textAnchor="middle"
-                                    interval={range === '7d' ? 0 : (interactiveData.length > 30 ? Math.floor(interactiveData.length / 15) : 0)}
+                                    interval={range === '7d' ? 0 : (range === '3m' ? Math.floor(interactiveData.length / 10) : (interactiveData.length > 30 ? Math.floor(interactiveData.length / 15) : 0))}
                                 />
                                 <YAxis
                                     stroke="#888888"
@@ -793,7 +793,7 @@ const Dashboard: React.FC<PageProps> = ({ reservations_count, recent_reservation
                         <CardTitle>Recent Reservations</CardTitle>
                         <CardDescription>Latest booking activity</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="overflow-x-auto p-4 mx-4">
                         <Table>
                             <TableHeader>
                                 <TableRow>
