@@ -1,2 +1,9 @@
 User-agent: *
-Disallow:
+Allow: /
+Allow: /dashboard
+Allow: /reservations/
+Allow: /guests/
+Disallow: /users/
+Disallow: /admin/
+
+Sitemap: https://skynaturepark.com/sitemap.xml

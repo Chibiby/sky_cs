@@ -31,6 +31,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         post(route('login'), {
+            preserveScroll: false,
+            onSuccess: () => {
+                window.location.href = route('dashboard');
+            },
             onFinish: () => reset('password'),
         });
     };

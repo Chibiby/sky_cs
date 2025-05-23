@@ -2,121 +2,159 @@ import { type NavItem } from '@/types';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar } from '@/components/ui/sidebar';
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface NavMainProps {
     items: NavItem[];
 }
 
-interface SubNavItem {
-    title: string;
-    href: string;
-}
-
-const subNavItems: Record<string, { title: string; href: string }[]> = {
-    'Reservations': [
-        { title: 'New Booking', href: '/reservations/create' },
-        { title: 'Manage Bookings', href: '/reservations/manage' },
-        { title: 'Room Availability', href: '/reservations/availability' },
-        { title: 'Booking Calendar', href: '/reservations/calendar' },
-    ],
-    'Guests': [
-        { title: 'Guest Records', href: '/guests' },
-        { title: 'Checked-in Guests', href: '/guests/checked-in' },
-        { title: 'Past Stays', href: '/guests/history' },
-        { title: 'VIP Guests', href: '/guests/vip' },
-    ],
-    'Payments & Invoices': [
-        { title: 'All Payments', href: '/payments' },
-        { title: 'All Invoices', href: '/invoices' },
-    ],
-    'Reports & Analytics': [
-        { title: 'Revenue Reports', href: '/reports/revenue' },
-        { title: 'Guest Analytics', href: '/reports/guests' },
-    ],
-};
-
 export function NavMain({ items }: NavMainProps) {
     const { url } = usePage();
     const { state } = useSidebar();
     const isMobile = useIsMobile();
-    const [expandedItem, setExpandedItem] = useState<string | null>(null);
+    const isCollapsed = state === 'collapsed' && !isMobile;
+    
+    // Change to array to track multiple expanded items
+    const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+        if (typeof window === 'undefined') return items.map(item => item.title);
+        const stored = localStorage.getItem('nav_expanded_items');
+        return stored ? JSON.parse(stored) : items.map(item => item.title);
+    });
+
+    // Update localStorage when expanded items change
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('nav_expanded_items', JSON.stringify(expandedItems));
+        }
+    }, [expandedItems]);
 
     const handleItemClick = (title: string, href: string) => {
-        if (title === 'Dashboard') {
-            // For Dashboard, use Link component to navigate
+        if (!items.find(item => item.title === title)?.items) {
             return;
         }
-        // For other items, toggle submenu if not collapsed or in mobile view
-        if (state !== 'collapsed' || isMobile) {
-            setExpandedItem(expandedItem === title ? null : title);
-        }
+        
+        // Toggle current item without affecting others
+        setExpandedItems(current => 
+            current.includes(title) 
+                ? current.filter(item => item !== title)
+                : [...current, title]
+        );
+    };
+    
+    // Function to get the display label for categories
+    const getCategoryLabel = (title: string) => {
+        if (title === 'Dashboard') return 'Overview';
+        return title;
+    };
+    
+    // Check if an item is active based on the current URL
+    const isActive = (href: string) => {
+        if (href === '/dashboard' && url === '/dashboard') return true;
+        return url.startsWith(href) && href !== '/dashboard';
     };
 
     return (
-        <SidebarMenu>
+        <SidebarMenu className="px-2">
             {items.map((item) => (
-                <div key={item.title}>
-                    {item.title === 'Dashboard' ? (
+                <div key={item.title} className="mb-6 last:mb-0">
+                    {/* Category Title without Icon */}
+                    <div className="mb-1">
+                        <div className="px-1">
+                            {!isCollapsed && (
+                                <span className={cn(
+                                    "text-muted-foreground text-xs font-semibold tracking-wide"
+                                )}>
+                                    {getCategoryLabel(item.title)}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Display subitems as direct buttons instead of dropdown */}
+                    {item.items ? (
+                        isCollapsed ? (
+                            // When collapsed, render just the icons for submenu items
+                            <div className="space-y-1 pl-1">
+                                {item.items.map((subItem) => (
+                                    <SidebarMenuItem key={subItem.title}>
+                                        <SidebarMenuButton 
+                                            asChild
+                                            tooltip={subItem.title}
+                                            className={cn(
+                                                "px-3 pr-4 transition-colors text-xs",
+                                                isActive(subItem.href) && "bg-primary/10 hover:bg-primary/15 rounded-md"
+                                            )}
+                                        >
+                                            <Link
+                                                href={subItem.href}
+                                                className={`flex items-center justify-center ${
+                                                    isActive(subItem.href) ? 'text-primary font-medium' : 'text-foreground hover:text-primary/90'
+                                                }`}
+                                            >
+                                                {subItem.icon && <subItem.icon className={cn(
+                                                    "h-4 w-4",
+                                                    isActive(subItem.href) && "text-primary"
+                                                )} />}
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </div>
+                        ) : (
+                            // When expanded, show full submenu
+                            <div className="space-y-1 pl-1">
+                                {item.items.map((subItem) => (
+                                    <SidebarMenuItem key={subItem.title}>
+                                        <SidebarMenuButton 
+                                            asChild
+                                            className={cn(
+                                                "px-3 pr-4 transition-colors text-xs",
+                                                isActive(subItem.href) && "bg-primary/10 hover:bg-primary/15 rounded-md"
+                                            )}
+                                        >
+                                            <Link
+                                                href={subItem.href}
+                                                className={`flex items-center gap-3 select-none ${
+                                                    isActive(subItem.href) ? 'text-primary font-medium' : 'text-foreground hover:text-primary/90'
+                                                }`}
+                                            >
+                                                {subItem.icon && <subItem.icon className={cn(
+                                                    "h-4 w-4",
+                                                    isActive(subItem.href) && "text-primary"
+                                                )} />}
+                                                <span>{subItem.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </div>
+                        )
+                    ) : (
                         <SidebarMenuItem>
                             <SidebarMenuButton 
                                 asChild
-                                tooltip={state === 'collapsed' ? item.title : undefined}
+                                tooltip={isCollapsed ? item.title : undefined}
+                                className={cn(
+                                    "px-3 pr-4 transition-colors text-xs",
+                                    isActive(item.href) && "bg-primary/10 hover:bg-primary/15 rounded-md"
+                                )}
                             >
                                 <Link
                                     href={item.href}
-                                    className={`flex items-center gap-3 ${
-                                        url === item.href ? 'text-primary' : 'text-foreground'
+                                    className={`flex items-center gap-3 select-none ${
+                                        isActive(item.href) ? 'text-primary font-medium' : 'text-foreground hover:text-primary/90'
                                     }`}
                                 >
-                                    {item.icon && <item.icon className="h-4 w-4" />}
-                                    <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                                    {item.icon && <item.icon className={cn(
+                                        "h-4 w-4",
+                                        isActive(item.href) && "text-primary"
+                                    )} />}
+                                    <span className={isCollapsed ? "hidden" : ""}>{item.title}</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                    ) : (
-                        <>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    onClick={() => handleItemClick(item.title, item.href)}
-                                    className="w-full"
-                                    tooltip={state === 'collapsed' ? item.title : undefined}
-                                >
-                                    <div className="flex items-center justify-between w-full">
-                                        <div className="flex items-center gap-3">
-                                            {item.icon && <item.icon className="h-4 w-4" />}
-                                            <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
-                                        </div>
-                                        {(state !== 'collapsed' || isMobile) && (
-                                            <ChevronRight
-                                                className={`h-4 w-4 transition-transform ${
-                                                    expandedItem === item.title ? 'rotate-90' : ''
-                                                }`}
-                                            />
-                                        )}
-                                    </div>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            {expandedItem === item.title && (state !== 'collapsed' || isMobile) && subNavItems[item.title] && (
-                                <SidebarMenuSub>
-                                    {subNavItems[item.title].map((subItem) => (
-                                        <SidebarMenuSubItem key={subItem.title}>
-                                            <SidebarMenuSubButton asChild>
-                                                <Link
-                                                    href={subItem.href}
-                                                    className={`${
-                                                        url === subItem.href ? 'text-primary' : 'text-muted-foreground'
-                                                    }`}
-                                                >
-                                                    {subItem.title}
-                                                </Link>
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                    ))}
-                                </SidebarMenuSub>
-                            )}
-                        </>
                     )}
                 </div>
             ))}

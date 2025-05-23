@@ -11,9 +11,10 @@ class Guest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
+        'first_name',
+        'last_name',
         'email',
-        'phone',
+        'phone_number',
         'address',
         'is_vip',
         'status',
@@ -23,9 +24,20 @@ class Guest extends Model
         'is_vip' => 'boolean',
     ];
 
+    /**
+     * Get all reservations for the guest.
+     */
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    /**
+     * Get the full name of the guest.
+     */
+    public function getFullNameAttribute()
+    {
+        return "{$this->first_name} {$this->last_name}";
     }
 
     public function pastStays(): HasMany

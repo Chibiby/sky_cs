@@ -11,25 +11,36 @@ class Reservation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'first_name',
-        'last_name',
-        'email',
-        'phone',
-        'check_in_date',
-        'check_out_date',
-        'room_type',
+        'guest_id',
+        'accommodation_id',
+        'check_in',
+        'check_out',
         'number_of_guests',
-        'special_requests',
-        'status'
+        'status',
+        'total_amount',
+        'notes',
     ];
 
     protected $casts = [
-        'reservation_date' => 'datetime',
-        'check_in_date' => 'datetime',
-        'check_out_date' => 'datetime',
+        'check_in' => 'date',
+        'check_out' => 'date',
+        'number_of_guests' => 'integer',
     ];
 
-    public function guest(): BelongsTo
+    public function accommodation()
+    {
+        return $this->belongsTo(Accommodation::class);
+    }
+
+    public function getRoomTypeAttribute()
+    {
+        return $this->accommodation->type ?? '';
+    }
+
+    /**
+     * Get the guest that owns the reservation.
+     */
+    public function guest()
     {
         return $this->belongsTo(Guest::class);
     }
