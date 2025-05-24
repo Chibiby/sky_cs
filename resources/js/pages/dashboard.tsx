@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -71,6 +71,31 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const Dashboard: React.FC<PageProps> = ({ reservations_count, recent_reservations, bookingsByDay, popularRooms, monthlyTrends, revenueByMonth }) => {
+    // State to track screen size breakpoints
+    const [isMobileView, setIsMobileView] = useState(false);
+    const [isTabletView, setIsTabletView] = useState(false);
+
+    // Effect to update screen size states on window resize
+    useEffect(() => {
+        const handleResize = () => {
+            const width = window.innerWidth;
+            // Tailwind breakpoints: sm = 640px, md = 768px, lg = 1024px
+            setIsMobileView(width < 640);
+            setIsTabletView(width >= 640 && width < 1024);
+        };
+
+        // Set initial value
+        handleResize();
+
+        // Add event listener
+        window.addEventListener('resize', handleResize);
+
+        // Clean up event listener on component unmount
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
+
     // Transform bookingsByDay object to array for chart
     const bookingsByDayData = Object.entries(bookingsByDay || {}).map(([day, count]) => ({
         day,
@@ -723,7 +748,7 @@ const Dashboard: React.FC<PageProps> = ({ reservations_count, recent_reservation
                                     }}
                                     height={50}
                                     textAnchor="middle"
-                                    interval={range === '7d' ? 0 : (range === '3m' ? Math.floor(interactiveData.length / 10) : (interactiveData.length > 30 ? Math.floor(interactiveData.length / 15) : 0))}
+                                    interval={range === '7d' ? 0 : (range === '3m' ? Math.floor(interactiveData.length / (isMobileView ? 5 : 10)) : (range === '30d' ? Math.floor(interactiveData.length / (isMobileView ? 5 : (isTabletView ? 7 : 11))) : 0))}
                                 />
                                 <YAxis
                                     stroke="#888888"
